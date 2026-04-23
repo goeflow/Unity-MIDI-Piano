@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using UnityEngine.Serialization;
 
 public class PianoKeyController : MonoBehaviour
 {
@@ -67,7 +68,8 @@ public class PianoKeyController : MonoBehaviour
 	}
 
 	[Header("Note: Leave regex blank to sort alphabetically")]
-    public string Regex;
+	[FormerlySerializedAs("Regex")]
+    public string SortPattern;
 
 	public Dictionary<string, PianoKey> PianoNotes = new Dictionary<string, PianoKey>();
 
@@ -77,8 +79,15 @@ public class PianoKeyController : MonoBehaviour
 	{
 		if (Sort)
 		{
-			Regex sortReg = new Regex(@Regex);
-            Notes = Notes.OrderBy(note => sortReg.Match(note.name).Value).ToArray();
+			if (!string.IsNullOrEmpty(SortPattern))
+			{
+				Regex sortReg = new Regex(SortPattern);
+				Notes = Notes.OrderBy(note => sortReg.Match(note.name).Value).ToArray();
+			}
+			else
+			{
+				Notes = Notes.OrderBy(note => note.name).ToArray();
+			}
 		}
 
 		var count = 0;

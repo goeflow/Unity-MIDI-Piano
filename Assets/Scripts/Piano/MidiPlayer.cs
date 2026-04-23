@@ -20,12 +20,14 @@ public class MidiPlayer : MonoBehaviour
 
 	[HideInInspector]
 	public MidiNote[] MidiNotes;
-	public UnityEvent OnPlayTrack { get; set; }
+	public UnityEvent OnPlayTrack { get; private set; }
+
+	[Header("Optional References")]
+	[SerializeField] MusicText _musicText;
 
 	MidiFileInspector _midi;
 
 	string _path;
-	string[] _keyIndex;
 	int _noteIndex = 0;
 	int _midiIndex;
 	float _timer = 0;
@@ -35,9 +37,30 @@ public class MidiPlayer : MonoBehaviour
 	void Start ()
 	{
 		OnPlayTrack = new UnityEvent();
-		OnPlayTrack.AddListener(delegate{FindObjectOfType<MusicText>().StartSequence(MIDISongs[_midiIndex].Details);});
-		
+
+		// FindObjectOfType is obsolete in modern Unity; prefer FindFirstObjectByType when available.
+		if (_musicText == null)
+		{
+#if UNITY_2023_1_OR_NEWER
+			_musicText = FindFirstObjectByType<MusicText>();
+#else
+			_musicText = FindObjectOfType<MusicText>();
+#endif
+		}
+
+		OnPlayTrack.AddListener(() =>
+		{
+			if (_musicText != null && MIDISongs != null && MIDISongs.Length > 0 && _midiIndex < MIDISongs.Length)
+				_musicText.StartSequence(MIDISongs[_midiIndex].Details);
+		});
+
 		_midiIndex = 0;
+
+		if (MIDISongs == null || MIDISongs.Length == 0)
+		{
+			enabled = false;
+			return;
+		}
 
 		if (!_preset)
 			PlayCurrentMIDI();
@@ -56,8 +79,11 @@ public class MidiPlayer : MonoBehaviour
 
 	void Update ()
 	{
-		if (MIDISongs.Length <= 0)
+		if (MIDISongs == null || MIDISongs.Length == 0)
+		{
 			enabled = false;
+			return;
+		}
 		
 		if (_midi != null && MidiNotes.Length > 0 && _noteIndex < MidiNotes.Length)
 		{
